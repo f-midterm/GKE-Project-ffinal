@@ -35,12 +35,12 @@ data:
   server-port: "8080"
   
   # ============================================
-  # Default System Users
+  # Default System Users (LOCAL K8S ONLY)
   # ============================================
-  # PRODUCTION: Override these with proper secrets!
-  admin-username: "apartment_admin"
-  admin-email: "admin@apartment-system.local"
-  villager-username: "resident_demo"
-  villager-email: "resident@apartment-system.local"
-  test-username: "user_demo"
-  test-email: "user@apartment-system.local"
+  # Different from production!
+  admin-username: "local_admin"
+  admin-email: "admin@localhost.dev"
+  villager-username: "local_villager"
+  villager-email: "villager@localhost.dev"
+  test-username: "local_user"
+  test-email: "user@localhost.dev"
