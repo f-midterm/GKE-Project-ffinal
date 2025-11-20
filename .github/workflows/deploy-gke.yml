@@ -177,14 +177,46 @@ jobs:
         location: ${{ env.GKE_ZONE }}
     
     # ============================================
-    # Step 6: Deploy to GKE
+    # Step 6: Apply ConfigMap and Secret with GitHub Secrets
+    # ============================================
+    - name: Update K8s ConfigMap and Secret
+      working-directory: ./k8s-gcp/backend
+      env:
+        DEFAULT_ADMIN_USERNAME: ${{ secrets.DEFAULT_ADMIN_USERNAME }}
+        DEFAULT_ADMIN_EMAIL: ${{ secrets.DEFAULT_ADMIN_EMAIL }}
+        DEFAULT_VILLAGER_USERNAME: ${{ secrets.DEFAULT_VILLAGER_USERNAME }}
+        DEFAULT_VILLAGER_EMAIL: ${{ secrets.DEFAULT_VILLAGER_EMAIL }}
+        DEFAULT_TEST_USERNAME: ${{ secrets.DEFAULT_TEST_USERNAME }}
+        DEFAULT_TEST_EMAIL: ${{ secrets.DEFAULT_TEST_EMAIL }}
+        DEFAULT_ADMIN_PASSWORD: ${{ secrets.DEFAULT_ADMIN_PASSWORD }}
+        DEFAULT_VILLAGER_PASSWORD: ${{ secrets.DEFAULT_VILLAGER_PASSWORD }}
+        DEFAULT_TEST_PASSWORD: ${{ secrets.DEFAULT_TEST_PASSWORD }}
+      run: |
+        echo "Applying ConfigMap with secrets..."
+        envsubst < configmap.yaml | kubectl apply -f -
+        
+        echo "Applying Secret with secrets..."
+        envsubst < secret.yaml | kubectl apply -f -
+        
+        echo "✅ ConfigMap and Secret updated"
+    
+    # ============================================
+    # Step 7: Deploy to GKE
     # ============================================
     - name: Deploy Backend
       run: |
         kubectl set image deployment/backend \
           backend=gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
           -n ${{ env.NAMESPACE }}
-        kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=5m
+        
+        echo "Waiting for backend deployment..."
+        kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=10m
+        
+        echo "Checking backend pod status..."
+        kubectl get pods -n ${{ env.NAMESPACE }} -l component=backend
+        
+        echo "Showing backend logs..."
+        kubectl logs -n ${{ env.NAMESPACE }} -l component=backend --tail=50
     
     - name: Deploy Frontend
       run: |

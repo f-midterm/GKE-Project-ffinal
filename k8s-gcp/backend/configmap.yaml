@@ -30,12 +30,12 @@ data:
   maintenance-upload-dir: "/app/uploads/maintenance-attachments"
   
   # Default User Credentials (usernames and emails only)
-  admin-username: "apartment_admin"
-  admin-email: "admin@apartment-system.local"
-  villager-username: "resident_demo"
-  villager-email: "resident@apartment-system.local"
-  test-username: "user_demo"
-  test-email: "user@apartment-system.local"
+  admin-username: "${DEFAULT_ADMIN_USERNAME}"
+  admin-email: "${DEFAULT_ADMIN_EMAIL}"
+  villager-username: "${DEFAULT_VILLAGER_USERNAME}"
+  villager-email: "${DEFAULT_VILLAGER_EMAIL}"
+  test-username: "${DEFAULT_TEST_USERNAME}"
+  test-email: "${DEFAULT_TEST_EMAIL}"
   
   # Spring Profile
   spring-profiles-active: "prod"
