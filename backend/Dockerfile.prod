@@ -42,6 +42,11 @@ LABEL maintainer="your-team@example.com"
 LABEL description="Spring Boot Backend - Production"
 LABEL version="1.0"
 
+# Install curl for healthcheck
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
 # Create non-root user for security
 # - Creates system user (-r)
 # - Creates group with same name (-g)
@@ -65,9 +70,9 @@ USER appuser
 # Expose application port
 EXPOSE 8080
 
-# Health check (use custom /health endpoint)
+# Health check (use /api/health endpoint)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD curl -f http://localhost:8080/api/health || exit 1
 
 # JVM optimization flags for containerized environments
 ENV JAVA_OPTS="-XX:+UseContainerSupport \

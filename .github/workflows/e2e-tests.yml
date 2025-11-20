@@ -261,14 +261,21 @@ jobs:
           timeout 120s bash -c 'until docker compose -f docker-compose.test.yml exec -T mysql mysqladmin ping -h localhost --silent; do echo "Waiting for MySQL..."; sleep 5; done'
           echo "✅ MySQL is ready"
           
-          echo "Waiting a bit for backend to start..."
+          echo "Waiting a bit for backend to initialize..."
           sleep 10
           
           echo "=== Backend Container Status ==="
           docker compose -f docker-compose.test.yml ps backend
           
-          echo "=== Backend Logs ==="
-          docker compose -f docker-compose.test.yml logs backend
+          echo "=== Checking if backend is still running ==="
+          if ! docker compose -f docker-compose.test.yml ps backend | grep -q "Up"; then
+            echo "❌ Backend container crashed! Showing full logs:"
+            docker compose -f docker-compose.test.yml logs backend
+            echo ""
+            echo "=== Backend Container Inspect ==="
+            docker inspect apartment-test-backend --format='{{.State.ExitCode}}: {{.State.Error}}'
+            exit 1
+          fi
           
           echo "Waiting for Backend to be ready..."
           timeout 120s bash -c 'until curl -f http://localhost:8080/api/health 2>/dev/null; do echo "Waiting for Backend..."; sleep 5; done' || {
