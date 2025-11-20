@@ -109,8 +109,11 @@ jobs:
           timeout 120s bash -c 'until docker compose -f docker-compose.test.yml exec -T mysql mysqladmin ping -h localhost --silent; do echo "Waiting for MySQL..."; sleep 5; done'
           echo "✅ MySQL is ready"
           
+          echo "Checking Backend logs..."
+          docker compose -f docker-compose.test.yml logs backend
+          
           echo "Waiting for Backend to be ready..."
-          timeout 120s bash -c 'until curl -f http://localhost:8080/actuator/health 2>/dev/null; do echo "Waiting for Backend..."; sleep 5; done'
+          timeout 120s bash -c 'until curl -f http://localhost:8080/health 2>/dev/null; do echo "Waiting for Backend..."; sleep 5; done'
           echo "✅ Backend is ready"
           
           echo "Waiting for Frontend to be ready..."
