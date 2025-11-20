@@ -70,7 +70,7 @@ jobs:
         cd backend
         gcloud builds submit \
           --config=cloudbuild.yaml \
-          --substitutions=_IMAGE_TAG=${{ github.sha }},_PROJECT_ID=${{ env.PROJECT_ID }} \
+          --substitutions=_IMAGE_TAG=${{ github.sha }} \
           --machine-type=n1-highcpu-8
     
     - name: Build Frontend Image
@@ -78,7 +78,7 @@ jobs:
         cd frontend
         gcloud builds submit \
           --config=cloudbuild.yaml \
-          --substitutions=_IMAGE_TAG=${{ github.sha }},_PROJECT_ID=${{ env.PROJECT_ID }} \
+          --substitutions=_IMAGE_TAG=${{ github.sha }} \
           --machine-type=n1-highcpu-8
     
     # ============================================
