@@ -1,23 +1,29 @@
-name: Build and Deploy to GKE
+name: Deploy to GKE
 
 on:
-  push:
+  workflow_run:
+    workflows: ["E2E Tests with Cypress"]
+    types:
+      - completed
     branches:
       - main
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GKE_CLUSTER: ${{ secrets.GKE_CLUSTER_NAME }}
-  GKE_ZONE: ${{ secrets.GKE_ZONE }}  # asia-southeast1-a
+  GKE_ZONE: ${{ secrets.GKE_ZONE }}
   NAMESPACE: beliv-apartment
   BACKEND_IMAGE: apartment-backend
   FRONTEND_IMAGE: apartment-frontend
 
 jobs:
   deploy:
-    name: Build and Deploy to GKE
+    name: Deploy to GKE
     runs-on: ubuntu-latest
+    
+    # Only deploy if E2E tests passed
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     
     permissions:
       contents: read
@@ -63,26 +69,7 @@ jobs:
         location: ${{ env.GKE_ZONE }}
     
     # ============================================
-    # Step 6: Build Images with Cloud Build
-    # ============================================
-    - name: Build Backend Image
-      run: |
-        cd backend
-        gcloud builds submit \
-          --config=cloudbuild.yaml \
-          --substitutions=_IMAGE_TAG=${{ github.sha }} \
-          --machine-type=n1-highcpu-8
-    
-    - name: Build Frontend Image
-      run: |
-        cd frontend
-        gcloud builds submit \
-          --config=cloudbuild.yaml \
-          --substitutions=_IMAGE_TAG=${{ github.sha }} \
-          --machine-type=n1-highcpu-8
-    
-    # ============================================
-    # Step 7: Deploy to GKE (using kubectl set image)
+    # Step 6: Deploy to GKE
     # ============================================
     - name: Deploy Backend
       run: |
@@ -99,7 +86,7 @@ jobs:
         kubectl rollout status deployment/frontend -n ${{ env.NAMESPACE }} --timeout=5m
     
     # ============================================
-    # Step 8: Verify Deployment
+    # Step 7: Verify Deployment
     # ============================================
     - name: Verify Deployment
       run: |
@@ -115,7 +102,6 @@ jobs:
           -o jsonpath='{.spec.template.spec.containers[0].image}'
         
         echo -e "\n=== Deployment Complete! ==="
+        echo "Commit SHA: ${{ github.sha }}"
         echo "Application URL: https://beliv.pipatpongpri.dev"
-        
-        echo -e "\n=== Deployment Complete! ==="
-        echo "Application URL: https://beliv.pipatpongpri.dev"
+
