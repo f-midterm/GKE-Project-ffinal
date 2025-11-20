@@ -30,19 +30,30 @@ public class BackendApplication {
 
         return args -> {
             // --- Initialize default users from environment variables ---
-            // SECURITY: Credentials are loaded from environment variables for better security
+            // SECURITY: All credentials must be provided via environment variables
             
-            String adminUsername = System.getenv().getOrDefault("ADMIN_USERNAME", "admin");
-            String adminPassword = System.getenv().getOrDefault("ADMIN_PASSWORD", "admin123");
-            String adminEmail = System.getenv().getOrDefault("ADMIN_EMAIL", "admin@apartment.com");
+            String adminUsername = System.getenv("DEFAULT_ADMIN_USERNAME");
+            String adminPassword = System.getenv("DEFAULT_ADMIN_PASSWORD");
+            String adminEmail = System.getenv("DEFAULT_ADMIN_EMAIL");
             
-            String villagerUsername = System.getenv().getOrDefault("VILLAGER_USERNAME", "villager");
-            String villagerPassword = System.getenv().getOrDefault("VILLAGER_PASSWORD", "villager123");
-            String villagerEmail = System.getenv().getOrDefault("VILLAGER_EMAIL", "villager@apartment.com");
+            String villagerUsername = System.getenv("DEFAULT_VILLAGER_USERNAME");
+            String villagerPassword = System.getenv("DEFAULT_VILLAGER_PASSWORD");
+            String villagerEmail = System.getenv("DEFAULT_VILLAGER_EMAIL");
             
-            String testUsername = System.getenv().getOrDefault("TEST_USERNAME", "testuser");
-            String testPassword = System.getenv().getOrDefault("TEST_PASSWORD", "test123");
-            String testEmail = System.getenv().getOrDefault("TEST_EMAIL", "testuser@apartment.com");
+            String testUsername = System.getenv("DEFAULT_TEST_USERNAME");
+            String testPassword = System.getenv("DEFAULT_TEST_PASSWORD");
+            String testEmail = System.getenv("DEFAULT_TEST_EMAIL");
+            
+            // Validate required environment variables
+            if (adminUsername == null || adminPassword == null || adminEmail == null) {
+                throw new IllegalStateException("Admin user environment variables are not set. Required: DEFAULT_ADMIN_USERNAME, DEFAULT_ADMIN_PASSWORD, DEFAULT_ADMIN_EMAIL");
+            }
+            if (villagerUsername == null || villagerPassword == null || villagerEmail == null) {
+                throw new IllegalStateException("Villager user environment variables are not set. Required: DEFAULT_VILLAGER_USERNAME, DEFAULT_VILLAGER_PASSWORD, DEFAULT_VILLAGER_EMAIL");
+            }
+            if (testUsername == null || testPassword == null || testEmail == null) {
+                throw new IllegalStateException("Test user environment variables are not set. Required: DEFAULT_TEST_USERNAME, DEFAULT_TEST_PASSWORD, DEFAULT_TEST_EMAIL");
+            }
             
             // Delete existing users to avoid duplicates
             userRepository.findByUsername(adminUsername).forEach(userRepository::delete);
