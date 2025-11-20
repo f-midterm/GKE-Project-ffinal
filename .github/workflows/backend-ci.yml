@@ -79,10 +79,35 @@ jobs:
     - name: Build Backend Image
       working-directory: ./backend
       run: |
-        gcloud builds submit \
+        BUILD_ID=$(gcloud builds submit \
           --config=cloudbuild.yaml \
           --substitutions=_IMAGE_TAG=${{ steps.meta.outputs.tag }} \
-          --timeout=15m
+          --async \
+          --format="value(id)")
         
-        echo "✅ Backend image built successfully!"
-        echo "Image: ${{ steps.meta.outputs.image }}"
+        echo "Build ID: $BUILD_ID"
+        echo "Waiting for build to complete..."
+        
+        # Wait with exponential backoff to avoid rate limit
+        for i in {1..30}; do
+          STATUS=$(gcloud builds describe $BUILD_ID --format="value(status)" 2>/dev/null || echo "QUEUED")
+          echo "Build status: $STATUS"
+          
+          if [ "$STATUS" = "SUCCESS" ]; then
+            echo "✅ Backend image built successfully!"
+            echo "Image: ${{ steps.meta.outputs.image }}"
+            exit 0
+          elif [ "$STATUS" = "FAILURE" ] || [ "$STATUS" = "TIMEOUT" ] || [ "$STATUS" = "CANCELLED" ]; then
+            echo "❌ Build failed with status: $STATUS"
+            gcloud builds log $BUILD_ID
+            exit 1
+          fi
+          
+          # Exponential backoff: 10s, 20s, 30s...
+          SLEEP_TIME=$((i * 10))
+          if [ $SLEEP_TIME -gt 60 ]; then SLEEP_TIME=60; fi
+          sleep $SLEEP_TIME
+        done
+        
+        echo "❌ Build timeout after 15 minutes"
+        exit 1
