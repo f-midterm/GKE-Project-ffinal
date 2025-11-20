@@ -1,0 +1,23 @@
+# ============================================
+# FRONTEND SERVICE
+# ============================================
+# ClusterIP service for frontend access
+# Ingress routes / traffic here
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: beliv-apartment
+  labels:
+    app: apartment-system
+    component: frontend
+spec:
+  type: ClusterIP  # Internal access only
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: apartment-system
+    component: frontend

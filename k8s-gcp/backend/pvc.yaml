@@ -1,0 +1,21 @@
+# ============================================
+# PERSISTENT VOLUME CLAIM FOR FILE UPLOADS (GCP)
+# ============================================
+# Stores payment slips and maintenance attachments
+# Uses GCE Persistent Disk (pd-standard)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-uploads-pvc
+  namespace: beliv-apartment
+  labels:
+    app: apartment-system
+    component: backend
+    platform: gcp
+spec:
+  accessModes:
+    - ReadWriteOnce  # Single node access (cheaper than ReadWriteMany)
+  resources:
+    requests:
+      storage: 10Gi  # 10GB for file uploads
+  storageClassName: standard-rwo  # GKE standard persistent disk

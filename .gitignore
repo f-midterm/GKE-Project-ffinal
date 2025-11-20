@@ -1,0 +1,324 @@
+# =======================
+# PRODUCTION .gitignore
+# =======================
+
+# Jenkins (existing)
+/jenkins-master
+
+# ===============================
+# DEVELOPMENT FILES (DO NOT DEPLOY)
+# ===============================
+# docker-compose.dev.yml
+# **/Dockerfile.dev
+# **/*.dev
+# **/*.development
+
+# Development Docker files
+# **/docker-compose.dev.*
+# **/docker-compose.development.*
+# **/docker-compose.local.*
+
+
+
+# Development scripts
+**/dev-scripts/
+**/development/
+scripts/dev-*
+scripts/*-dev.*
+
+# Temporary documentation files
+API_FIX_SUMMARY.md
+CURRENT_STATUS.md
+PIPELINE_TEST.md
+PRODUCTION_DEPLOYMENT_ROADMAP.md
+**/temp*.md
+**/tmp*.md
+
+# ===============================
+# ENVIRONMENT & SECRETS
+# ===============================
+# CRITICAL: Never commit actual environment files with secrets!
+.env
+.env.local
+.env.*.local
+.env.prod
+.env.production
+*.env.prod
+*.env.production
+**/.env
+**/.env.local
+**/.env.prod
+**/.env.production
+
+# Keep only templates
+!.env.example
+!.env.template
+!**/.env.example
+!.env.example
+!.env.*.example
+!**/.env.example
+
+# ===============================
+# SCRIPT FILES & AUTOMATION
+# ===============================
+
+# Windows batch files
+*.bat
+**/*.bat
+
+# # Shell scripts
+# *.sh
+# **/*.sh
+
+# PowerShell scripts
+
+# Executable scripts
+# *.exe
+*.cmd
+
+# ===============================
+# BRANCH-SPECIFIC FILES
+# ===============================
+
+# Main branch files (if accidentally added)
+# NOTE: Don't use **/main/** as it blocks backend/src/main/java
+main-branch/
+*-main-branch.*
+
+# Develop branch files (if accidentally added)
+# NOTE: Don't use **/develop/** as it may block source folders
+develop-branch/
+*-develop-branch.*
+
+# ===============================
+# DOCUMENTATION & MARKDOWN
+# ===============================
+
+# Block markdown files from node_modules only
+frontend/node_modules/**/*.md
+backend/node_modules/**/*.md
+**/node_modules/**/*.md
+
+# Allow all project documentation
+# (Our guides, references, and documentation are important!)
+!*.md
+!**/*.md
+
+# Documentation directories
+docs/
+documentation/
+**/docs/
+**/documentation/
+
+# ===============================
+# DEPENDENCIES & BUILD ARTIFACTS
+# ===============================
+
+# Node.js (Frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+build/
+
+# Java/Gradle (Backend)
+# .gradle
+build/
+!**/gradle/wrapper/gradle-wrapper.jar
+!**/gradle/wrapper/gradle-wrapper.properties
+!**/gradle/wrapper/**
+!**/src/main/**/build/
+!**/src/test/**/build/
+# *.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# ===============================
+# IDE & EDITOR FILES
+# ===============================
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# ===============================
+# OPERATING SYSTEM
+# ===============================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# ===============================
+# LOGS & TEMP FILES
+# ===============================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.tmp
+.temp
+tmp/
+temp/
+
+# ===============================
+# DOCKER & KUBERNETES (DEV/LOCAL)
+# ===============================
+
+# Local Docker overrides
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Kubernetes dev configs
+k8s/dev/
+k8s/local/
+k8s/*-dev.yaml
+k8s/*-local.yaml
+
+# ===============================
+# DATABASES & DATA
+# ===============================
+*.sqlite
+*.sqlite3
+*.db
+data/
+mysql-data/
+postgres-data/
+
+# ===============================
+# TESTING & TEST FILES
+# ===============================
+.nyc_output/
+.pytest_cache/
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+test-results/
+
+# Test files and directories
+# **/test/
+# **/tests/
+# **/*test*
+# **/*Test*
+test*.js
+test*.html
+test*.json
+# **/cypress/  # Allow Cypress files
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+# cypress.config.js  # Allow Cypress config
+jest.config.js
+*.test.js
+*.spec.js
+*.test.ts
+*.spec.ts
+
+# Sample and example files
+sample*.html
+example*.html
+sample*.js
+example*.js
+sample*.json
+example*.json
+**/samples/
+**/examples/
+
+# ===============================
+# SECURITY & CERTIFICATES
+# ===============================
+*.pem
+*.key
+*.crt
+secrets/
+certs/
+private/
+backend/caches/
+backend/daemon/
+backend/native/
+# Do not ignore Gradle Wrapper; only ignore a top-level /wrapper if present
+#/wrapper/
+
+docs/SECRETS_SETUP.md
+
+# ===============================
+# ADDITIONAL EXCLUDES
+# ===============================
+
+# Temporary and backup files
+*.tmp
+*.bak
+*.backup
+*~
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Configuration overrides
+config.local.*
+*.local.json
+*.local.yml
+*.local.yaml
+
+# Build artifacts and cache
+.cache/
+.temp/
+.build/
+dist-*/
+build-*/
+
+DESIGN_UNIT_PRICE_HISTORY.md
+POSTMAN_API_ENDPOINTS.md
+k8s/SECRETS_README.md
+README.md
+SECURITY_CHECKLIST.md
+SECURITY_IMPROVEMENTS.md
+k8s-gcp/CLUSTER_SETUP.md
+github-actions-key.json
+.github/SECRETS_SETUP.md
+.github/SETUP_SERVICE_ACCOUNT.md

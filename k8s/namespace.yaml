@@ -1,0 +1,11 @@
+# ============================================
+# NAMESPACE
+# ============================================
+# Isolated namespace for the entire application
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: superproject-ns
+  labels:
+    app: apartment-system
+    environment: production

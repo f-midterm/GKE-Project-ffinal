@@ -1,0 +1,113 @@
+# ============================================
+# MYSQL STATEFULSET
+# ============================================
+# Stateful MySQL deployment with persistent storage
+# Uses StatefulSet for stable network identity and ordered deployment
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: superproject-ns
+  labels:
+    app: apartment-system
+    component: database
+spec:
+  serviceName: mysql-service
+  replicas: 1  # Single instance (consider read replicas for HA)
+  selector:
+    matchLabels:
+      app: apartment-system
+      component: database
+  template:
+    metadata:
+      labels:
+        app: apartment-system
+        component: database
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        ports:
+        - containerPort: 3306
+          name: mysql
+          protocol: TCP
+        env:
+        # MySQL root password from Secret
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: root-password
+        # Database name from Secret
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: database
+        # MySQL user from Secret
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: username
+        # MySQL password from Secret
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: password
+        volumeMounts:
+        # Mount persistent volume for MySQL data
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        # Mount init.sql from ConfigMap
+        - name: mysql-init
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+        # Liveness probe: Check if MySQL is responsive
+        livenessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+            - -u
+            - root
+            - -p$(MYSQL_ROOT_PASSWORD)
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        # Readiness probe: Check if MySQL is ready to accept connections
+        readinessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+            - -u
+            - root
+            - -p$(MYSQL_ROOT_PASSWORD)
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 3
+        # Resource limits and requests
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+      volumes:
+      # Persistent volume for MySQL data
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+      # ConfigMap containing init.sql
+      - name: mysql-init
+        configMap:
+          name: mysql-init-cm

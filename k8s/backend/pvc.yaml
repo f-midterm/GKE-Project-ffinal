@@ -1,0 +1,20 @@
+# ============================================
+# PERSISTENT VOLUME CLAIM FOR FILE UPLOADS
+# ============================================
+# Stores payment slips and maintenance attachments
+# Uses local storage (for Docker Desktop)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-uploads-pvc
+  namespace: superproject-ns
+  labels:
+    app: apartment-system
+    component: backend
+spec:
+  accessModes:
+    - ReadWriteOnce  # Single node (OK for Docker Desktop)
+  resources:
+    requests:
+      storage: 5Gi  # 5GB for file uploads
+  storageClassName: hostpath  # Docker Desktop default

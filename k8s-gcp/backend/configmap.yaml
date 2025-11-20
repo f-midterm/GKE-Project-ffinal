@@ -1,0 +1,41 @@
+# ============================================
+# BACKEND CONFIGMAP (GCP)
+# ============================================
+# Non-sensitive configuration for backend application
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: beliv-apartment
+  labels:
+    app: apartment-system
+    component: backend
+    platform: gcp
+data:
+  # JPA Configuration
+  jpa-ddl-auto: "update"  # GCP: allow schema updates
+  jpa-show-sql: "false"   # Disable SQL logging in production
+  
+  # JWT Configuration (expiration only, secret in Secret)
+  jwt-expiration: "86400000"  # 24 hours
+  
+  # CORS Configuration
+  cors-allowed-origins: "https://beliv.pipatpongpri.dev,http://beliv.pipatpongpri.dev"
+  
+  # Server Configuration
+  server-port: "8080"
+  
+  # File Upload Configuration
+  file-upload-dir: "/app/uploads/payment-slips"
+  maintenance-upload-dir: "/app/uploads/maintenance-attachments"
+  
+  # Default User Credentials (usernames and emails only)
+  admin-username: "apartment_admin"
+  admin-email: "admin@apartment-system.local"
+  villager-username: "resident_demo"
+  villager-email: "resident@apartment-system.local"
+  test-username: "user_demo"
+  test-email: "user@apartment-system.local"
+  
+  # Spring Profile
+  spring-profiles-active: "prod"

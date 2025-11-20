@@ -1,0 +1,100 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*{
+	font-family: 'Poppins', sans-serif;
+}
+
+/* Component utilities for the project */
+@layer components {
+	.logo {
+		background: -webkit-radial-gradient(circle, #0076D4, #303841);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		display: inline-block;
+	}
+    .text-gradient {
+		@apply bg-clip-text text-transparent bg-gradient-to-r from-[#0076D4] to-[#303841];
+	}
+    .nav-link-active-underline {
+		position: relative;
+	}
+	.nav-link-active-underline::after {
+		content: '';
+		position: absolute;
+		bottom: -2px;
+		left: 0;
+		width: 100%;
+		height: 2px;
+		background: linear-gradient(90deg, #0076D4, #303841);
+		border-radius: 1px;
+	}
+    .text-gradient-underline {
+        content: '';
+		position: absolute;
+		bottom: -2px;
+		left: 0;
+		width: 100%;
+		height: 2px;
+		background: linear-gradient(90deg, #0076D4, #303841);
+		border-radius: 1px;
+    }
+
+	/* Nav link hover/active underline using pseudo-element animation */
+	.nav-link-hover-underline {
+		position: relative;
+	}
+	.nav-link-hover-underline::after {
+		content: '';
+		position: absolute;
+		bottom: -6px;
+		left: 50%;
+		width: 0%;
+		height: 3px;
+		background: linear-gradient(90deg, #0076D4, #303841);
+		border-radius: 2px;
+		transform: translateX(-50%);
+		transition: width 220ms ease;
+	}
+	.nav-link-hover-underline:hover::after,
+	.nav-link-hover-underline.active::after,
+	.nav-link-hover-underline[aria-current='page']::after {
+		width: 100%;
+	}
+	.form-divider {
+		text-align: center; 
+		margin: 1.5rem 0; 
+		color: #666; 
+		display: flex; 
+		align-items: center;
+	}
+
+	.form-divider::before, .form-divider::after {
+		content: '';
+		flex: 1;
+		height: 1px;
+		background-color: #ccc;
+	}
+
+	.form-divider span {
+		padding: 0 1rem;
+	}
+	.title{
+		background: -webkit-linear-gradient(180deg, #0076D4, #303841);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		display: inline-block;
+		width: fit-content;
+		@apply text-4xl font-medium lg:text-5xl;
+	}
+}
+
+/* Enable smooth scrolling for anchor/JS scrollIntoView */
+html {
+	scroll-behavior: smooth;
+}

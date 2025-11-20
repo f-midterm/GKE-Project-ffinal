@@ -1,0 +1,66 @@
+# ===============================
+# GRADLE BUILD FILES
+# ===============================
+.gradle/
+build/
+!**/gradle/wrapper/gradle-wrapper.jar
+!**/gradle/wrapper/gradle-wrapper.properties
+!**/gradle/wrapper/**
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ===============================
+# IDE FILES
+# ===============================
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### VS Code ###
+.vscode/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# ===============================
+# DEVELOPMENT & TEST FILES
+# ===============================
+# Development Dockerfile
+Dockerfile.dev
+
+# Test files
+src/test/resources/application-test.properties
+src/test/resources/application-dev.properties
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# ===============================
+# LOGS
+# ===============================
+*.log
+logs/

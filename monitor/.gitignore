@@ -1,0 +1,33 @@
+# Helm dependencies
+charts/
+*.tgz
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Local testing
+test-results/
+*.log
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Custom values (if you want to keep production secrets out of git)
+# Uncomment if needed:
+# values.production.yaml
+# grafana-admin-secret.production.yaml

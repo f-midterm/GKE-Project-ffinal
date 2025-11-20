@@ -1,0 +1,81 @@
+# ============================================
+# Production-Ready Multi-Stage Dockerfile
+# Spring Boot Backend
+# ============================================
+
+# --- Stage 1: Build Stage ---
+FROM eclipse-temurin:21-jdk-jammy AS builder
+
+# Set build arguments for optimization
+ARG GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
+
+# Create app directory
+WORKDIR /app
+
+# Copy Gradle wrapper and configuration files first (better layer caching)
+COPY gradlew build.gradle settings.gradle ./
+COPY gradle ./gradle
+
+# Grant execution permission to Gradle wrapper
+RUN chmod +x ./gradlew
+
+# Download dependencies (cached layer if dependencies don't change)
+RUN ./gradlew dependencies --no-daemon || true
+
+# Copy application source code
+COPY src ./src
+
+# Build the application
+# - Skip tests in Docker build (run tests in CI/CD)
+# - Use --no-daemon to avoid Gradle daemon in container
+# - Create optimized JAR with bootJar
+RUN ./gradlew bootJar --no-daemon -x test
+
+# Verify JAR was created
+RUN ls -lh /app/build/libs/
+
+# --- Stage 2: Runtime Stage ---
+FROM eclipse-temurin:21-jre-jammy
+
+# Metadata
+LABEL maintainer="your-team@example.com"
+LABEL description="Spring Boot Backend - Production"
+LABEL version="1.0"
+
+# Create non-root user for security
+# - Creates system user (-r)
+# - Creates group with same name (-g)
+# - No home directory (-M)
+# - Shell set to /bin/false (-s) for security
+RUN groupadd -r appuser && \
+    useradd -r -g appuser -M -s /sbin/nologin appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy only the built JAR from builder stage
+COPY --from=builder /app/build/libs/*.jar app.jar
+
+# Change ownership to non-root user
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose application port
+EXPOSE 8080
+
+# Health check (use custom /health endpoint)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# JVM optimization flags for containerized environments
+ENV JAVA_OPTS="-XX:+UseContainerSupport \
+               -XX:MaxRAMPercentage=75.0 \
+               -XX:+UseG1GC \
+               -XX:+ExitOnOutOfMemoryError \
+               -Djava.security.egd=file:/dev/./urandom"
+
+# Run the application
+# Use exec form to ensure proper signal handling
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

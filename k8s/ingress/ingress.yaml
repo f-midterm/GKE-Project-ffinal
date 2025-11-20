@@ -1,0 +1,90 @@
+# ============================================
+# INGRESS WITH URL REWRITING
+# ============================================
+# Routes external traffic to frontend and backend services
+# CRITICAL: Performs URL rewriting for /api/ routes
+# 
+# Routing Rules:
+# - / --> frontend-service:80 (React SPA)
+# - /api/ --> backend-service:8080 (Spring Boot API)
+#   + URL Rewrite: /api/auth/login --> /auth/login (strips /api prefix)
+#
+# This Ingress uses nginx annotations for URL rewriting.
+# For Traefik, see ingress-traefik.yaml
+---
+# Backend API Ingress: handles /api with regex rewrite
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apartment-ingress-backend-api
+  namespace: superproject-ns
+  labels:
+    app: apartment-system
+    component: backend
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /api(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 8080
+
+---
+# Backend Uploads Ingress: handles /uploads without rewrite
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apartment-ingress-backend-uploads
+  namespace: superproject-ns
+  labels:
+    app: apartment-system
+    component: backend
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /uploads
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 8080
+
+---
+# Frontend Ingress: handles all non-/api traffic without rewrite
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apartment-ingress-frontend
+  namespace: superproject-ns
+  labels:
+    app: apartment-system
+    component: frontend
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80
+
+  # Optional TLS (production): attach a real certificate via cert-manager
+  # tls:
+  # - hosts:
+  #   - your.domain
+  #   secretName: apartment-tls

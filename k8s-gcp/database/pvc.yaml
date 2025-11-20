@@ -1,0 +1,25 @@
+# ============================================
+# PERSISTENT VOLUME CLAIM FOR MYSQL (GCP)
+# ============================================
+# Claims 5Gi of GCP Persistent Disk for MySQL data persistence
+# 
+# GCP Storage Class Notes:
+# - standard-rwo: Standard Persistent Disk (HDD-backed)
+# - premium-rwo: SSD Persistent Disk (faster, more expensive)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: beliv-apartment
+  labels:
+    app: apartment-system
+    component: database
+    platform: gcp
+spec:
+  accessModes:
+    - ReadWriteOnce  # Single node access (suitable for StatefulSet)
+  resources:
+    requests:
+      storage: 5Gi
+  # GCP Storage Class - standard-rwo for cost-effective storage
+  storageClassName: standard-rwo  # GCP Standard Persistent Disk

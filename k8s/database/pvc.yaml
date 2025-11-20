@@ -1,0 +1,26 @@
+# ============================================
+# PERSISTENT VOLUME CLAIM FOR MYSQL
+# ============================================
+# Claims 5Gi of storage for MySQL data persistence
+# 
+# Storage Class Notes:
+# - K3s: Uses 'local-path' by default
+# - Kubeadm: May need to create a StorageClass first
+# - Cloud: Uses cloud provider's default (e.g., 'gp2' for AWS EBS)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: superproject-ns
+  labels:
+    app: apartment-system
+    component: database
+spec:
+  accessModes:
+    - ReadWriteOnce  # Single node access (suitable for StatefulSet)
+  resources:
+    requests:
+      storage: 5Gi
+  # Uncomment and specify storageClassName if needed
+  # storageClassName: local-path  # K3s default
+  # storageClassName: standard     # Or your cluster's default

@@ -1,0 +1,263 @@
+name: E2E Tests with Cypress
+
+on:
+  push:
+    branches: [ "feature/**", "develop/**" ]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'docker-compose.test.yml'
+      - '.github/workflows/e2e-tests.yml'
+  pull_request:
+    branches: [ main, develop, feature/** ]
+    types: [ opened, synchronize, reopened ]
+  workflow_dispatch:  # Manual trigger for testing
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
+jobs:
+  cypress-e2e:
+    runs-on: ubuntu-latest
+    name: Run Cypress E2E Tests
+    
+    steps:
+      # 1. Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Set up Node.js for Cypress
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      # 3. Install Cypress dependencies
+      - name: Install Cypress dependencies
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm install -D cypress-mochawesome-reporter mochawesome mochawesome-merge mochawesome-report-generator
+
+      # 4. Log in to Docker Hub to pull images
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 5. Pull latest Docker images
+      - name: Pull Docker Images
+        run: |
+          echo "Pulling latest images from Docker Hub..."
+          docker pull ${{ env.DOCKER_USERNAME }}/apartment-backend:latest
+          docker pull ${{ env.DOCKER_USERNAME }}/apartment-frontend:latest
+          docker pull mysql:8.0
+          echo "✅ All images pulled successfully"
+
+      # 6. Create test environment file
+      - name: Create .env file for testing
+        run: |
+          cat > .env << EOF
+          DOCKER_USERNAME=${{ env.DOCKER_USERNAME }}
+          MYSQL_ROOT_PASSWORD=root123
+          MYSQL_DATABASE=apartment_db
+          SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/apartment_db
+          SPRING_DATASOURCE_USERNAME=root
+          SPRING_DATASOURCE_PASSWORD=root123
+          VITE_API_URL=http://localhost:8080
+          EOF
+
+      # 7. Start Application Stack with Docker Compose
+      - name: Start Application Stack
+        run: |
+          echo "Starting services with Docker Compose..."
+          docker compose -f docker-compose.test.yml up -d
+          
+          echo "Waiting for MySQL to be ready..."
+          timeout 120s bash -c 'until docker compose -f docker-compose.test.yml exec -T mysql mysqladmin ping -h localhost --silent; do echo "Waiting for MySQL..."; sleep 5; done'
+          echo "✅ MySQL is ready"
+          
+          echo "Waiting for Backend to be ready..."
+          timeout 120s bash -c 'until curl -f http://localhost:8080/actuator/health 2>/dev/null; do echo "Waiting for Backend..."; sleep 5; done'
+          echo "✅ Backend is ready"
+          
+          echo "Waiting for Frontend to be ready..."
+          timeout 60s bash -c 'until curl -f http://localhost:5173 2>/dev/null; do echo "Waiting for Frontend..."; sleep 3; done'
+          echo "✅ Frontend is ready"
+          
+          echo "🎉 All services are up and running!"
+
+      # 8. Display running containers for debugging
+      - name: Show running containers
+        if: always()
+        run: docker compose -f docker-compose.test.yml ps
+
+      # 9. Run Cypress E2E tests
+      - name: Run Cypress Tests
+        working-directory: ./frontend
+        run: |
+          echo "🧪 Running Cypress E2E tests..."
+          npx cypress run --browser chrome
+
+      # 10. Generate combined test report
+      - name: Generate Combined Test Report
+        if: always()
+        working-directory: ./frontend
+        run: |
+          echo "📊 Generating combined test report..."
+          if compgen -G "cypress/results/*.json" > /dev/null; then
+            npx mochawesome-merge cypress/results/*.json > combined-report.json
+            npx marge combined-report.json \
+              --reportDir cypress/reports/html \
+              --reportTitle "Apartment App E2E Tests" \
+              --reportPageTitle "Cypress Test Results" \
+              --inline
+          else
+            echo "⚠️ No test results found to merge. Tests may not have run with mochawesome reporter."
+            echo "Creating empty report..."
+            mkdir -p cypress/reports/html
+            echo '{"stats":{"tests":0,"passes":0,"failures":0,"pending":0,"duration":0}}' > combined-report.json
+          fi
+
+      # 11. Upload test videos
+      - name: Upload Cypress Videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: frontend/cypress/videos/
+          retention-days: 30
+
+      # 12. Upload test screenshots (failures only)
+      - name: Upload Cypress Screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: frontend/cypress/screenshots/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      # 13. Upload HTML test report
+      - name: Upload HTML Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-html-report
+          path: frontend/cypress/reports/html/
+          retention-days: 30
+          if-no-files-found: warn
+
+      # 14. Upload JSON test results
+      - name: Upload JSON Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-json-results
+          path: frontend/combined-report.json
+          retention-days: 30
+          if-no-files-found: warn
+
+      # 15. Comment test results on PR
+      - name: Comment Test Results on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let reportData;
+            try {
+              const report = fs.readFileSync('frontend/combined-report.json', 'utf8');
+              reportData = JSON.parse(report);
+            } catch (error) {
+              console.log('Could not read test results, posting generic comment');
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '⚠️ Cypress E2E tests encountered an error. Please check the workflow logs.'
+              });
+              return;
+            }
+            
+            const stats = reportData.stats;
+            const passed = stats.passes;
+            const failed = stats.failures;
+            const pending = stats.pending;
+            const total = stats.tests;
+            const duration = (stats.duration / 1000).toFixed(2);
+            
+            const passRate = ((passed / total) * 100).toFixed(1);
+            const emoji = failed === 0 ? '✅' : '❌';
+            const status = failed === 0 ? '**All tests passed!**' : '**Some tests failed!**';
+            
+            const body = `
+            ## ${emoji} Cypress E2E Test Results
+            
+            ${status}
+            
+            | Metric | Count |
+            |--------|-------|
+            | 📊 Total Tests | ${total} |
+            | ✅ Passed | ${passed} |
+            | ❌ Failed | ${failed} |
+            | ⏭️ Skipped | ${pending} |
+            | ⏱️ Duration | ${duration}s |
+            | 📈 Pass Rate | ${passRate}% |
+            
+            ${failed > 0 ? '### ⚠️ Failed Tests\n\nPlease review the test artifacts for details:\n- Videos: Check workflow artifacts\n- Screenshots: Available for failed tests\n- HTML Report: Full detailed report in artifacts\n' : '### 🎉 Excellent!\n\nAll E2E tests passed successfully. The application is working as expected.\n'}
+            
+            ---
+            *View full report in [workflow artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*
+            `;
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      # 16. Display test summary
+      - name: E2E Test Summary
+        if: always()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🧪 Cypress E2E Test Execution Complete"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          if [ -f frontend/combined-report.json ]; then
+            echo "📊 Test Results:"
+            cat frontend/combined-report.json | jq -r '.stats | "Total: \(.tests)\nPassed: \(.passes)\nFailed: \(.failures)\nSkipped: \(.pending)\nDuration: \(.duration)ms"'
+          else
+            echo "⚠️ Test results not available"
+          fi
+          echo ""
+          echo "📦 Artifacts uploaded:"
+          echo "  - Videos (all tests)"
+          echo "  - Screenshots (failures only)"
+          echo "  - HTML Report"
+          echo "  - JSON Results"
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      # 17. Show container logs on failure
+      - name: Show Backend Logs
+        if: failure()
+        run: docker compose -f docker-compose.test.yml logs backend
+
+      - name: Show Frontend Logs
+        if: failure()
+        run: docker compose -f docker-compose.test.yml logs frontend
+
+      # 18. Cleanup - Teardown environment
+      - name: Teardown Environment
+        if: always()
+        run: |
+          echo "🧹 Cleaning up test environment..."
+          docker compose -f docker-compose.test.yml down -v
+          echo "✅ Cleanup complete"

@@ -1,0 +1,247 @@
+# Helm values for kube-prometheus-stack
+# This configuration sets up Prometheus and Grafana for monitoring
+# the apartment system backend application
+
+# Global settings
+global:
+  rbac:
+    create: true
+
+# Prometheus Operator configuration
+prometheusOperator:
+  enabled: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Prometheus configuration
+prometheus:
+  enabled: true
+  
+  prometheusSpec:
+    # Run in agent mode for lower resource usage
+    # Agent mode focuses on scraping and forwarding metrics
+    enableRemoteWriteReceiver: false
+    
+    # Resource limits
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    
+    # Retention period for metrics
+    retention: 7d
+    retentionSize: "9GB"
+    
+    # Storage configuration
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+    
+    # ServiceMonitor selector
+    # This allows Prometheus to discover ServiceMonitors with matching labels
+    serviceMonitorSelector:
+      matchLabels:
+        prometheus: monitoring
+    
+    # PodMonitor selector
+    podMonitorSelector:
+      matchLabels:
+        prometheus: monitoring
+    
+    # Additional scrape configs can be added here if needed
+    additionalScrapeConfigs: []
+  
+  # Ingress configuration for Prometheus UI
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+    hosts:
+      - prometheus.localhost
+    paths:
+      - /
+    pathType: Prefix
+
+# Grafana configuration
+grafana:
+  enabled: true
+  
+  # Admin credentials from secret
+  admin:
+    existingSecret: "grafana-admin-secret"
+    userKey: admin-user
+    passwordKey: admin-password
+  
+  # Resource limits
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # Persistence for dashboards and data
+  persistence:
+    enabled: true
+    type: pvc
+    accessModes:
+      - ReadWriteOnce
+    size: 1Gi
+  
+  # Disable initChownData for Windows compatibility
+  initChownData:
+    enabled: false
+  
+  # Ingress configuration
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+    hosts:
+      - grafana.localhost
+    path: /
+    pathType: Prefix
+  
+  # Grafana configuration
+  grafana.ini:
+    server:
+      root_url: http://grafana.localhost
+    analytics:
+      check_for_updates: false
+      reporting_enabled: false
+    security:
+      allow_embedding: true
+    users:
+      auto_assign_org: true
+      auto_assign_org_role: Viewer
+  
+  # Default dashboards
+  defaultDashboardsEnabled: true
+  defaultDashboardsTimezone: Asia/Bangkok
+  
+  # Data sources - commented out to avoid conflict with default datasources
+  # The chart automatically creates a Prometheus datasource
+  # datasources:
+  #   datasources.yaml:
+  #     apiVersion: 1
+  #     datasources:
+  #       - name: Prometheus
+  #         type: prometheus
+  #         url: http://monitoring-kube-prometheus-prometheus:9090
+  #         access: proxy
+  #         isDefault: true
+  #         jsonData:
+  #           timeInterval: 30s
+  
+  # Dashboard providers - for importing custom dashboards
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+        - name: 'backend'
+          orgId: 1
+          folder: 'Backend Monitoring'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/backend
+  
+  # Custom dashboards
+  dashboards:
+    backend: {}
+    # Custom dashboards will be mounted here
+    # To add the backend dashboard, you can manually import grafana-dashboard-backend.json
+    # or use ConfigMap to auto-import it
+
+# Alertmanager configuration (disabled for resource saving)
+alertmanager:
+  enabled: false
+
+# Node exporter (disabled - has issues with K3s on Windows)
+nodeExporter:
+  enabled: false
+  # resources:
+  #   limits:
+  #     cpu: 100m
+  #     memory: 128Mi
+  #   requests:
+  #     cpu: 50m
+  #     memory: 64Mi
+
+# Kube-state-metrics (enabled for Kubernetes metrics)
+kubeStateMetrics:
+  enabled: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# Disable unnecessary components to save resources
+coreDns:
+  enabled: false
+
+kubeDns:
+  enabled: false
+
+kubeControllerManager:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
+kubeProxy:
+  enabled: false
+
+kubeEtcd:
+  enabled: false
+
+# Additional ServiceMonitors
+additionalServiceMonitors:
+  # ServiceMonitor for backend application
+  - name: backend-servicemonitor
+    # Match the namespace where backend is deployed
+    namespaceSelector:
+      matchNames:
+        - superproject-ns
+    # Selector to find the backend service
+    selector:
+      matchLabels:
+        app: apartment-system
+        component: backend
+        monitoring: enabled
+    # Endpoint configuration
+    endpoints:
+      - port: http
+        path: /actuator/prometheus
+        interval: 30s
+        scrapeTimeout: 10s
+    # Add label to be discovered by Prometheus
+    labels:
+      prometheus: monitoring

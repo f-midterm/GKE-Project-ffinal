@@ -1,0 +1,211 @@
+# ============================================
+# BACKEND DEPLOYMENT (GCP)
+# ============================================
+# Stateless Spring Boot application (3 replicas)
+# Uses Google Container Registry (GCR) for images
+# Connects to MySQL via mysql-service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: beliv-apartment
+  labels:
+    app: apartment-system
+    component: backend
+    platform: gcp
+spec:
+  replicas: 1  # 1 replica (required for ReadWriteOnce PVC)
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1  # At least 2 replicas always running
+      maxSurge: 1        # One extra pod during updates
+  selector:
+    matchLabels:
+      app: apartment-system
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: apartment-system
+        component: backend
+    spec:
+      # Security: Set file permissions for PVC
+      securityContext:
+        fsGroup: 1000  # GID that matches appuser in Dockerfile
+      # Init container to wait for MySQL to be ready
+      initContainers:
+      - name: wait-for-mysql
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - |
+          until nc -z mysql-service 3306; do
+            echo "Waiting for MySQL to be ready..."
+            sleep 2
+          done
+          echo "MySQL is ready!"
+      containers:
+      - name: backend
+        # GCP: Use Google Container Registry
+        # FORMAT: gcr.io/beliv-apartment/IMAGE_NAME:TAG
+        image: gcr.io/beliv-apartment/apartment-backend:prod
+        imagePullPolicy: Always  # Always pull from GCR
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        # Spring Boot profile
+        - name: SPRING_PROFILES_ACTIVE
+          value: "prod"
+        # Database connection URL (connects to mysql-service)
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:mysql://mysql-service:3306/apartment_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+        # Database username from Secret
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: username
+        # Database password from Secret
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: password
+        # JPA configuration from ConfigMap
+        - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: jpa-ddl-auto
+        - name: SPRING_JPA_SHOW_SQL
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: jpa-show-sql
+        # JWT configuration from Secret
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: jwt-secret-key
+        - name: JWT_EXPIRATION
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: jwt-expiration
+        # CORS configuration from ConfigMap
+        - name: CORS_ALLOWED_ORIGINS
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: cors-allowed-origins
+        # Server configuration from ConfigMap
+        - name: SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: server-port
+        # File upload paths from ConfigMap
+        - name: FILE_UPLOAD_DIR
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: file-upload-dir
+        - name: MAINTENANCE_UPLOAD_DIR
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: maintenance-upload-dir
+        # Default user credentials from ConfigMap (usernames)
+        - name: DEFAULT_ADMIN_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: admin-username
+        - name: DEFAULT_ADMIN_EMAIL
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: admin-email
+        - name: DEFAULT_VILLAGER_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: villager-username
+        - name: DEFAULT_VILLAGER_EMAIL
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: villager-email
+        - name: DEFAULT_TEST_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: test-username
+        - name: DEFAULT_TEST_EMAIL
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: test-email
+        # Default user passwords from Secret
+        - name: DEFAULT_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: admin-password
+        - name: DEFAULT_VILLAGER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: villager-password
+        - name: DEFAULT_TEST_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: test-password
+        # Spring profile from ConfigMap
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: spring-profiles-active
+        # Java memory settings
+        - name: JAVA_OPTS
+          value: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Xms512m -Xmx1536m"
+        # Liveness probe: Check if application is running
+        livenessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        # Readiness probe: Check if application is ready to serve traffic
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 45
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        # Resource limits and requests (optimized for e2-small)
+        resources:
+          requests:
+            memory: "384Mi"
+            cpu: "300m"
+          limits:
+            memory: "768Mi"
+            cpu: "600m"
+        # Volume mounts for file uploads
+        volumeMounts:
+        - name: uploads
+          mountPath: /app/uploads
+      # Volumes
+      volumes:
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: backend-uploads-pvc

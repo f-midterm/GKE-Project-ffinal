@@ -1,0 +1,73 @@
+#!/usr/bin/env sh
+
+##############################################################################
+##
+##  Gradle start up script for UN*X
+##
+##############################################################################
+
+# Add default JVM options here. You may also use JAVA_OPTS and GRADLE_OPTS.
+# DEFAULT_JVM_OPTS=""
+
+APP_NAME="Gradle"
+APP_BASE_NAME=$(basename "$0")
+
+# Use Java from path, or search for Java in standard locations
+if [ -n "$JAVA_HOME" ] ; then
+    JAVA_EXE="$JAVA_HOME/bin/java"
+else
+    JAVA_EXE=$(which java)
+fi
+
+if [ ! -x "$JAVA_EXE" ] ; then
+  echo "Cannot find Java. Please set JAVA_HOME or put java into your PATH."
+  exit 1
+fi
+
+DIR=$(dirname "$0")
+APP_HOME=$(cd "$DIR" ; pwd)
+
+# Add default JVM options here. You may also use JAVA_OPTS and GRADLE_OPTS.
+DEFAULT_JVM_OPTS=""
+
+# OS specific support (must be 'true' or 'false').
+cygwin=false
+darwin=false
+case "`uname`" in
+  CYGWIN*)
+    cygwin=true
+    ;;
+  Darwin*)
+    darwin=true
+    ;;
+esac
+
+# For Cygwin, ensure paths are in UNIX format before anything else
+if $cygwin ; then
+    [ -n "$JAVA_HOME" ] && JAVA_HOME=$(cygpath --unix "$JAVA_HOME")
+    [ -n "$APP_HOME" ] && APP_HOME=$(cygpath --unix "$APP_HOME")
+fi
+
+# Determine the location of the Gradle distribution.
+# This script can be part of a Gradle distribution, or it can be part of a
+# wrapper within a project.
+if [ -f "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" ] ; then
+    # Wrapper script, so use the accompanying wrapper jar.
+    CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+else
+    # Assume we are in a Gradle distribution.
+    CLASSPATH="$APP_HOME/lib/gradle-launcher.jar"
+fi
+
+# For Cygwin, switch paths to Windows format before running java
+if $cygwin ; then
+    [ -n "$CLASSPATH" ] && CLASSPATH=$(cygpath --path --windows "$CLASSPATH")
+fi
+
+exec "$JAVA_EXE" \
+    ${DEFAULT_JVM_OPTS} \
+    ${JAVA_OPTS} \
+    ${GRADLE_OPTS} \
+    -classpath "$CLASSPATH" \
+    org.gradle.wrapper.GradleWrapperMain \
+    "$@"

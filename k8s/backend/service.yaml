@@ -1,0 +1,24 @@
+# ============================================
+# BACKEND SERVICE
+# ============================================
+# ClusterIP service for backend access
+# Ingress routes /api/ traffic here
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: superproject-ns
+  labels:
+    app: apartment-system
+    component: backend
+    monitoring: enabled  # Enable Prometheus monitoring
+spec:
+  type: ClusterIP  # Internal access only
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: apartment-system
+    component: backend

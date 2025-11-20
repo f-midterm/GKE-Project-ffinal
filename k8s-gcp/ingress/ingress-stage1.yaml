@@ -1,0 +1,34 @@
+# ============================================
+# GKE INGRESS - STAGE 1 (HTTP ONLY)
+# ============================================
+# Initial ingress without TLS to get External IP first
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apartment-ingress
+  namespace: beliv-apartment
+  labels:
+    app: apartment-system
+    platform: gcp
+spec:
+  rules:
+  - host: beliv.muict.app
+    http:
+      paths:
+      # Backend API routes
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 8080
+      
+      # Frontend routes
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80

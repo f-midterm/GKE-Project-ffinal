@@ -1,0 +1,12 @@
+# ============================================
+# NAMESPACE
+# ============================================
+# Same namespace as localhost deployment for consistency
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: beliv-apartment
+  labels:
+    app: apartment-system
+    environment: production
+    platform: gcp

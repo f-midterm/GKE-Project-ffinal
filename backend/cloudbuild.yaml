@@ -1,0 +1,40 @@
+steps:
+  # Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/apartment-backend:${_IMAGE_TAG}'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/apartment-backend:latest'
+      - '-f'
+      - 'Dockerfile.prod'
+      - '.'
+
+  # Push the image to Google Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/apartment-backend:${_IMAGE_TAG}'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/apartment-backend:latest'
+
+# Substitutions (default values)
+substitutions:
+  _IMAGE_TAG: 'prod'
+
+# Store images in Google Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/apartment-backend:${_IMAGE_TAG}'
+  - 'gcr.io/$PROJECT_ID/apartment-backend:latest'
+
+# Build timeout (15 minutes)
+timeout: '900s'
+
+# Build options
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY

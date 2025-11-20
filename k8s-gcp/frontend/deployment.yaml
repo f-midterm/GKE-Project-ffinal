@@ -1,0 +1,67 @@
+# ============================================
+# FRONTEND DEPLOYMENT (GCP)
+# ============================================
+# Stateless React/Nginx application (2 replicas)
+# Uses Google Container Registry (GCR) for images
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: beliv-apartment
+  labels:
+    app: apartment-system
+    component: frontend
+    platform: gcp
+spec:
+  replicas: 1  # 1 replica (optimized for e2-small cluster)
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1  # At least 1 replica always running
+      maxSurge: 1        # One extra pod during updates
+  selector:
+    matchLabels:
+      app: apartment-system
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: apartment-system
+        component: frontend
+    spec:
+      containers:
+      - name: frontend
+        # GCP: Use Google Container Registry
+        # FORMAT: gcr.io/beliv-apartment/IMAGE_NAME:TAG
+        image: gcr.io/beliv-apartment/apartment-frontend:prod
+        imagePullPolicy: Always  # Always pull from GCR
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        # Liveness probe: Check if Nginx is running
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 3
+          failureThreshold: 3
+        # Readiness probe: Check if Nginx is ready to serve traffic
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 2
+          failureThreshold: 3
+        # Resource limits and requests
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"

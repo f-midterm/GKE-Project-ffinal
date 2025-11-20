@@ -1,0 +1,154 @@
+import React, { useState, useRef, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  FiMenu,
+  FiBell,
+  FiUser,
+  FiLogOut,
+  FiGrid,
+  FiHome,
+} from "react-icons/fi";
+import { useAuth } from "../../hooks/useAuth";
+import { getUnreadCount } from "../../api/services/maintenanceNotification.service";
+
+function UserNavbar({ toggleSidebar }) {
+  const navigate = useNavigate();
+  const { user, logout, isAdmin } = useAuth();
+  const [isDropdownOpen, setDropdownOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    // Poll every 30 seconds for new notifications
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const count = await getUnreadCount();
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div className="fixed top-0 left-0 right-0 z-10">
+      <div className="w-full transition-colors duration-300 shadow-md">
+        <div className="flex justify-between py-4 lg:px-32 px-6 bg-white">
+          {/* Left Side */}
+          <div className="flex lg:gap-12 gap-6 items-center">
+            <button
+              className="btn rounded-full p-3 hover:text-[#0076D4]"
+              onClick={toggleSidebar}
+            >
+              <FiMenu size={24} />
+            </button>
+            <div onClick={() => navigate(`/user/${user?.id}`)} className="logo text-4xl font-semibold cursor-pointer">
+              BeLiv
+            </div>
+          </div>
+
+          {/* Right Side */}
+          <div className="flex lg:gap-12 gap-6 items-center">
+            <div
+              onClick={() => {
+                navigate(`/user/${user?.id}/notifications`);
+                fetchUnreadCount(); // Refresh count when opening notifications
+              }}
+              className="btn rounded-full p-3 hover:text-[#0076D4] cursor-pointer relative"
+            >
+              <FiBell size={24} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </div>
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setDropdownOpen(!isDropdownOpen)}
+                className="btn rounded-full p-3 border-2 border-[#0076D4] hover:shadow-md hover:translate-y-[-0.5px]"
+              >
+                <FiUser size={24} className="text-[#0076D4]" />
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10">
+                  <div className="p-4 border-b border-gray-200">
+                    <p className="font-semibold">{user?.username}</p>
+                    <p className="text-sm text-gray-500">{user?.email}</p>
+                  </div>
+                  <ul className="py-1">
+                    <li>
+                      <Link
+                        to={`/user/${user?.id}`}
+                        className="flex items-center px-4 py-2 text-gray-800 hover:bg-gray-100"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <FiUser className="mr-2" />
+                        Profile
+                      </Link>
+                    </li>
+                    {isAdmin && (
+                      <li>
+                        <Link
+                          to="/admin"
+                          className="flex items-center px-4 py-2 text-gray-800 hover:bg-gray-100"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          <FiGrid className="mr-2" />
+                          Dashboard
+                        </Link>
+                      </li>
+                    )}
+                    <li>
+                      <Link
+                        to="/"
+                        className="flex items-center px-4 py-2 text-gray-800 hover:bg-gray-100"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <FiHome className="mr-2" />
+                        Back to Home
+                      </Link>
+                    </li>
+                    <li>
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center w-full px-4 py-2 text-left text-gray-800 hover:bg-gray-100 text-red-600"
+                      >
+                        <FiLogOut className="mr-2" />
+                        Logout
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default UserNavbar;

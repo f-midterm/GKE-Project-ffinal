@@ -1,0 +1,12 @@
+# ============================================
+# GKE MANAGED CERTIFICATE
+# ============================================
+# Google-managed SSL certificate for GKE Ingress
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: beliv-cert
+  namespace: beliv-apartment
+spec:
+  domains:
+    - beliv.pipatpongpri.dev

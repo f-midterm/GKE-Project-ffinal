@@ -1,0 +1,65 @@
+# ============================================
+# FRONTEND DEPLOYMENT
+# ============================================
+# Stateless React/Nginx application (2 replicas)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: superproject-ns
+  labels:
+    app: apartment-system
+    component: frontend
+spec:
+  replicas: 2  # 2 replicas for high availability
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1  # At least 1 replica always running
+      maxSurge: 1        # One extra pod during updates
+  selector:
+    matchLabels:
+      app: apartment-system
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: apartment-system
+        component: frontend
+    spec:
+      containers:
+      - name: frontend
+        # Local development: apartment-frontend:prod
+        # Production: your-registry/apartment-frontend:prod
+        image: apartment-frontend:prod
+        imagePullPolicy: Never  # Use local image (change to Always for remote registries)
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        # Liveness probe: Check if Nginx is running
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 3
+          failureThreshold: 3
+        # Readiness probe: Check if Nginx is ready to serve traffic
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 2
+          failureThreshold: 3
+        # Resource limits and requests
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
