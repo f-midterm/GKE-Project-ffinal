@@ -24,7 +24,7 @@ services:
       - test-network
 
   backend:
-    image: ${DOCKER_USERNAME}/apartment-backend:latest
+    image: gcr.io/${GCP_PROJECT_ID:-beliv-apartment}/apartment-backend:${IMAGE_TAG:-test}
     container_name: apartment-test-backend
     depends_on:
       mysql:
@@ -48,7 +48,7 @@ services:
       - test-network
 
   frontend:
-    image: ${DOCKER_USERNAME}/apartment-frontend:latest
+    image: gcr.io/${GCP_PROJECT_ID:-beliv-apartment}/apartment-frontend:${IMAGE_TAG:-test}
     container_name: apartment-test-frontend
     depends_on:
       backend:

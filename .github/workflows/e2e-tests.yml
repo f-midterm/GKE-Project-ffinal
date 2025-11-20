@@ -89,20 +89,20 @@ jobs:
       - name: Create .env file for testing
         run: |
           cat > .env << EOF
+          GCP_PROJECT_ID=${{ env.PROJECT_ID }}
+          IMAGE_TAG=test
           MYSQL_ROOT_PASSWORD=root123
           MYSQL_DATABASE=apartment_db
           SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/apartment_db
           SPRING_DATASOURCE_USERNAME=root
           SPRING_DATASOURCE_PASSWORD=root123
           VITE_API_URL=http://localhost:8080
-          IMAGE_TAG=test
           EOF
 
       # 9. Start Application Stack with Docker Compose
       - name: Start Application Stack
         run: |
           echo "Starting services with Docker Compose..."
-          export IMAGE_TAG=test
           docker compose -f docker-compose.test.yml up -d
           
           echo "Waiting for MySQL to be ready..."
