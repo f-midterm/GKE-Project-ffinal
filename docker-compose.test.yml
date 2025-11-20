@@ -36,6 +36,9 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_SHOW_SQL: "true"
       SERVER_PORT: 8080
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET:-test-secret-key-for-e2e-testing-min-256-bits-long-secret}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
       # Default user credentials
       DEFAULT_ADMIN_USERNAME: ${DEFAULT_ADMIN_USERNAME:-admin}
       DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-admin123}
