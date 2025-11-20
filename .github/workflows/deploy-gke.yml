@@ -177,7 +177,7 @@ jobs:
     # ============================================
     # Step 6: Apply ConfigMap and Secret with GitHub Secrets
     # ============================================
-    - name: Update K8s ConfigMap and Secret
+    - name: Update Backend ConfigMap and Secret
       working-directory: ./k8s-gcp/backend
       env:
         DEFAULT_ADMIN_USERNAME: ${{ secrets.DEFAULT_ADMIN_USERNAME }}
@@ -190,13 +190,26 @@ jobs:
         DEFAULT_VILLAGER_PASSWORD: ${{ secrets.DEFAULT_VILLAGER_PASSWORD }}
         DEFAULT_TEST_PASSWORD: ${{ secrets.DEFAULT_TEST_PASSWORD }}
       run: |
-        echo "Applying ConfigMap with secrets..."
+        echo "Applying Backend ConfigMap..."
         envsubst < configmap.yaml | kubectl apply -f -
         
-        echo "Applying Secret with secrets..."
+        echo "Applying Backend Secret..."
         envsubst < secret.yaml | kubectl apply -f -
         
-        echo "✅ ConfigMap and Secret updated"
+        echo "✅ Backend ConfigMap and Secret updated"
+    
+    - name: Update Database Secret
+      working-directory: ./k8s-gcp/database
+      env:
+        MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+        MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+        MYSQL_USERNAME: ${{ secrets.MYSQL_USERNAME }}
+        MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+      run: |
+        echo "Applying Database Secret..."
+        envsubst < secret.yaml | kubectl apply -f -
+        
+        echo "✅ Database Secret updated"
     
     # ============================================
     # Step 7: Deploy to GKE
