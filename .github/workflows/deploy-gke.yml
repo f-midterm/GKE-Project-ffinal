@@ -1,12 +1,14 @@
 name: Deploy to GKE
 
 on:
-  workflow_run:
-    workflows: ["E2E Tests with Cypress"]
-    types:
-      - completed
+  push:
     branches:
       - main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'k8s-gcp/**'
+      - '.github/workflows/deploy-gke.yml'
   workflow_dispatch:
 
 env:
@@ -18,12 +20,118 @@ env:
   FRONTEND_IMAGE: apartment-frontend
 
 jobs:
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'backend/') || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+      
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+      
+      - name: Build Backend Image
+        working-directory: ./backend
+        run: |
+          BUILD_ID=$(gcloud builds submit \
+            --config=cloudbuild.yaml \
+            --substitutions=_IMAGE_TAG=${{ github.sha }} \
+            --async \
+            --format="value(id)")
+          
+          echo "Build ID: $BUILD_ID"
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+          
+          for i in {1..30}; do
+            STATUS=$(gcloud builds describe $BUILD_ID --format="value(status)" 2>/dev/null || echo "QUEUED")
+            echo "Build status: $STATUS"
+            
+            if [ "$STATUS" = "SUCCESS" ]; then
+              echo "✅ Backend image built successfully!"
+              exit 0
+            elif [ "$STATUS" = "FAILURE" ] || [ "$STATUS" = "TIMEOUT" ] || [ "$STATUS" = "CANCELLED" ]; then
+              echo "❌ Build failed with status: $STATUS"
+              gcloud builds log $BUILD_ID
+              exit 1
+            fi
+            
+            SLEEP_TIME=$((i * 10))
+            if [ $SLEEP_TIME -gt 60 ]; then SLEEP_TIME=60; fi
+            sleep $SLEEP_TIME
+          done
+  
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'frontend/') || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+      
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+      
+      - name: Build Frontend Image
+        working-directory: ./frontend
+        run: |
+          BUILD_ID=$(gcloud builds submit \
+            --config=cloudbuild.yaml \
+            --substitutions=_IMAGE_TAG=${{ github.sha }} \
+            --async \
+            --format="value(id)")
+          
+          echo "Build ID: $BUILD_ID"
+          
+          for i in {1..30}; do
+            STATUS=$(gcloud builds describe $BUILD_ID --format="value(status)" 2>/dev/null || echo "QUEUED")
+            echo "Build status: $STATUS"
+            
+            if [ "$STATUS" = "SUCCESS" ]; then
+              echo "✅ Frontend image built successfully!"
+              exit 0
+            elif [ "$STATUS" = "FAILURE" ] || [ "$STATUS" = "TIMEOUT" ] || [ "$STATUS" = "CANCELLED" ]; then
+              echo "❌ Build failed with status: $STATUS"
+              gcloud builds log $BUILD_ID
+              exit 1
+            fi
+            
+            SLEEP_TIME=$((i * 10))
+            if [ $SLEEP_TIME -gt 60 ]; then SLEEP_TIME=60; fi
+            sleep $SLEEP_TIME
+          done
+  
   deploy:
     name: Deploy to GKE
     runs-on: ubuntu-latest
-    
-    # Only deploy if E2E tests passed
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    needs: [build-backend, build-frontend]
+    if: always() && (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') && (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped')
     
     permissions:
       contents: read
