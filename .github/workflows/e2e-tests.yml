@@ -261,6 +261,10 @@ jobs:
           timeout 120s bash -c 'until docker compose -f docker-compose.test.yml exec -T mysql mysqladmin ping -h localhost --silent; do echo "Waiting for MySQL..."; sleep 5; done'
           echo "✅ MySQL is ready"
           
+          echo "Waiting for MySQL to fully initialize (accept connections)..."
+          timeout 60s bash -c 'until docker compose -f docker-compose.test.yml exec -T mysql mysql -uroot -proot123 -e "SELECT 1" 2>/dev/null; do echo "Waiting for MySQL to accept connections..."; sleep 3; done'
+          echo "✅ MySQL accepting connections"
+          
           echo "Waiting a bit for backend to initialize..."
           sleep 10
           
