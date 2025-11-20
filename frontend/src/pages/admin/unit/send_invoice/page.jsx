@@ -465,6 +465,11 @@ function SendInvoicePage() {
                                             step="0.01"
                                             value={electricityUnits}
                                             onChange={(e) => setElectricityUnits(e.target.value)}
+                                            onKeyPress={(e) => {
+                                                if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                                                    e.preventDefault();
+                                                }
+                                            }}
                                             className='w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400'
                                             placeholder='Enter electricity units'
                                         />
@@ -482,6 +487,11 @@ function SendInvoicePage() {
                                             step="0.01"
                                             value={waterUnits}
                                             onChange={(e) => setWaterUnits(e.target.value)}
+                                            onKeyPress={(e) => {
+                                                if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                                                    e.preventDefault();
+                                                }
+                                            }}
                                             className='w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400'
                                             placeholder='Enter water units'
                                         />
@@ -506,6 +516,11 @@ function SendInvoicePage() {
                                             step="0.01"
                                             value={customAmount}
                                             onChange={(e) => setCustomAmount(e.target.value)}
+                                            onKeyPress={(e) => {
+                                                if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                                                    e.preventDefault();
+                                                }
+                                            }}
                                             className='w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400'
                                             placeholder={invoiceType === 'SECURITY_DEPOSIT' ? unit?.rentAmount || 0 : 'Enter amount'}
                                         />

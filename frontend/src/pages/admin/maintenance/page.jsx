@@ -558,8 +558,14 @@ function MaintenancePage() {
                         type='number'
                         value={formData.recurrenceInterval}
                         onChange={(e) => handleFormChange('recurrenceInterval', parseInt(e.target.value))}
+                        onKeyPress={(e) => {
+                          if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                            e.preventDefault();
+                          }
+                        }}
                         className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
                         min='1'
+                        step='1'
                       />
                     </div>
                   )}
@@ -574,9 +580,15 @@ function MaintenancePage() {
                       type='number'
                       value={formData.recurrenceDayOfWeek || ''}
                       onChange={(e) => handleFormChange('recurrenceDayOfWeek', e.target.value ? parseInt(e.target.value) : null)}
+                      onKeyPress={(e) => {
+                        if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                          e.preventDefault();
+                        }
+                      }}
                       className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
                       min='0'
                       max='6'
+                      step='1'
                       placeholder='0-6'
                     />
                   </div>
@@ -591,9 +603,15 @@ function MaintenancePage() {
                       type='number'
                       value={formData.recurrenceDayOfMonth || ''}
                       onChange={(e) => handleFormChange('recurrenceDayOfMonth', e.target.value ? parseInt(e.target.value) : null)}
+                      onKeyPress={(e) => {
+                        if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                          e.preventDefault();
+                        }
+                      }}
                       className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
                       min='1'
                       max='31'
+                      step='1'
                       placeholder='1-31'
                     />
                   </div>
@@ -700,9 +718,15 @@ function MaintenancePage() {
                     type='number'
                     value={formData.notifyDaysBefore}
                     onChange={(e) => handleFormChange('notifyDaysBefore', parseInt(e.target.value))}
+                    onKeyPress={(e) => {
+                      if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                        e.preventDefault();
+                      }
+                    }}
                     className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
                     min='0'
                     max='30'
+                    step='1'
                   />
                   <p className='text-xs text-gray-500 mt-1'>
                     Tenants will be notified this many days before maintenance.

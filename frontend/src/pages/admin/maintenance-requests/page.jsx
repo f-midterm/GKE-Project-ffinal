@@ -830,8 +830,14 @@ function MaintenanceRequestsPage() {
                     <input
                       type='number'
                       min='1'
+                      step='1'
                       value={itemQuantity}
                       onChange={(e) => setItemQuantity(parseInt(e.target.value) || 1)}
+                      onKeyPress={(e) => {
+                        if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                          e.preventDefault();
+                        }
+                      }}
                       className='w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500'
                     />
                   </div>

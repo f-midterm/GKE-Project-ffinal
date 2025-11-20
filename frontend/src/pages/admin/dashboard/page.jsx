@@ -321,6 +321,13 @@ function AdminDashboard() {
                   type='number'
                   value={newFloorData.floorNumber}
                   onChange={(e) => setNewFloorData(prev => ({ ...prev, floorNumber: e.target.value }))}
+                  onKeyPress={(e) => {
+                    if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                      e.preventDefault();
+                    }
+                  }}
+                  min='1'
+                  step='1'
                   className='w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500'
                   placeholder='Enter floor number'
                 />
@@ -359,9 +366,16 @@ function AdminDashboard() {
                           Room Number <span className='text-red-500'>*</span>
                         </label>
                         <input
-                          type='text'
+                          type='number'
                           value={room.roomNumber}
                           onChange={(e) => updateFloorRoom(index, 'roomNumber', e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                              e.preventDefault();
+                            }
+                          }}
+                          min='1'
+                          step='1'
                           className='w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500'
                           placeholder='e.g., 101'
                         />
@@ -387,8 +401,14 @@ function AdminDashboard() {
                         <input
                           type='number'
                           step='0.01'
+                          min='0'
                           value={room.size}
                           onChange={(e) => updateFloorRoom(index, 'size', e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                              e.preventDefault();
+                            }
+                          }}
                           className='w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500'
                           placeholder='e.g., 25.5'
                         />
@@ -400,8 +420,15 @@ function AdminDashboard() {
                         </label>
                         <input
                           type='number'
+                          min='0'
+                          step='0.01'
                           value={room.rentAmount}
                           onChange={(e) => updateFloorRoom(index, 'rentAmount', e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                              e.preventDefault();
+                            }
+                          }}
                           className='w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500'
                           placeholder='e.g., 5000'
                         />
@@ -451,6 +478,13 @@ function AdminDashboard() {
                   type='number'
                   value={newRoomData.floor}
                   onChange={(e) => setNewRoomData(prev => ({ ...prev, floor: e.target.value }))}
+                  onKeyPress={(e) => {
+                    if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                      e.preventDefault();
+                    }
+                  }}
+                  min='1'
+                  step='1'
                   className='w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500'
                   placeholder='Enter floor number'
                 />
@@ -461,9 +495,16 @@ function AdminDashboard() {
                   Room Number <span className='text-red-500'>*</span>
                 </label>
                 <input
-                  type='text'
+                  type='number'
                   value={newRoomData.roomNumber}
                   onChange={(e) => setNewRoomData(prev => ({ ...prev, roomNumber: e.target.value }))}
+                  onKeyPress={(e) => {
+                    if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                      e.preventDefault();
+                    }
+                  }}
+                  min='1'
+                  step='1'
                   className='w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500'
                   placeholder='e.g., 101'
                 />
@@ -489,8 +530,14 @@ function AdminDashboard() {
                 <input
                   type='number'
                   step='0.01'
+                  min='0'
                   value={newRoomData.size}
                   onChange={(e) => setNewRoomData(prev => ({ ...prev, size: e.target.value }))}
+                  onKeyPress={(e) => {
+                    if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                      e.preventDefault();
+                    }
+                  }}
                   className='w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500'
                   placeholder='e.g., 25.5'
                 />
@@ -502,8 +549,15 @@ function AdminDashboard() {
                 </label>
                 <input
                   type='number'
+                  min='0'
+                  step='0.01'
                   value={newRoomData.rentAmount}
                   onChange={(e) => setNewRoomData(prev => ({ ...prev, rentAmount: e.target.value }))}
+                  onKeyPress={(e) => {
+                    if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                      e.preventDefault();
+                    }
+                  }}
                   className='w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500'
                   placeholder='e.g., 5000'
                 />

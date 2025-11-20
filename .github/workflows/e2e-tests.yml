@@ -71,28 +71,46 @@ jobs:
       - name: Pull Docker Images from GCR
         run: |
           echo "Pulling latest images from GCR..."
-          # Try to pull with commit SHA first (from recent build)
+          
+          BACKEND_MISSING=false
+          FRONTEND_MISSING=false
+          
+          # Pull backend image
           if docker pull gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}; then
+            echo "✅ Found backend image with SHA: ${{ github.sha }}"
             docker tag gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
               gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:test
-          else
-            echo "⚠️ Image with SHA not found, using latest"
-            docker pull gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:latest
+          elif docker pull gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:latest; then
+            echo "⚠️ SHA image not found, using latest"
             docker tag gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:latest \
               gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:test
+          else
+            echo "❌ No backend image found in GCR"
+            BACKEND_MISSING=true
           fi
           
+          # Pull frontend image
           if docker pull gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}; then
+            echo "✅ Found frontend image with SHA: ${{ github.sha }}"
             docker tag gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }} \
               gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:test
-          else
-            echo "⚠️ Image with SHA not found, using latest"
-            docker pull gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:latest
+          elif docker pull gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:latest; then
+            echo "⚠️ SHA image not found, using latest"
             docker tag gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:latest \
               gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:test
+          else
+            echo "❌ No frontend image found in GCR"
+            FRONTEND_MISSING=true
           fi
           
+          # Pull MySQL
           docker pull mysql:8.0
+          
+          # Check if any images are missing
+          if [ "$BACKEND_MISSING" = "true" ] || [ "$FRONTEND_MISSING" = "true" ]; then
+            echo "❌ Required images not found. Please run build workflow first."
+            exit 1
+          fi
           
           echo "✅ All images pulled successfully"
 
@@ -135,7 +153,7 @@ jobs:
           docker compose -f docker-compose.test.yml logs backend
           
           echo "Waiting for Backend to be ready..."
-          timeout 120s bash -c 'until curl -f http://localhost:8080/health 2>/dev/null; do echo "Waiting for Backend..."; sleep 5; done' || {
+          timeout 120s bash -c 'until curl -f http://localhost:8080/api/health 2>/dev/null; do echo "Waiting for Backend..."; sleep 5; done' || {
             echo "❌ Backend failed to start. Showing logs:"
             docker compose -f docker-compose.test.yml logs backend
             exit 1

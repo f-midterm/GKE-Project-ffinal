@@ -164,8 +164,14 @@ function EditUnitPage() {
               name="floor"
               value={formData.floor}
               onChange={handleChange}
+              onKeyPress={(e) => {
+                if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                  e.preventDefault();
+                }
+              }}
               required
               min="1"
+              step="1"
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="e.g., 1"
             />
@@ -181,6 +187,11 @@ function EditUnitPage() {
               name="rentAmount"
               value={formData.rentAmount}
               onChange={handleChange}
+              onKeyPress={(e) => {
+                if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                  e.preventDefault();
+                }
+              }}
               required
               min="0"
               step="0.01"
@@ -199,6 +210,11 @@ function EditUnitPage() {
               name="sizeSqm"
               value={formData.sizeSqm}
               onChange={handleChange}
+              onKeyPress={(e) => {
+                if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                  e.preventDefault();
+                }
+              }}
               min="0"
               step="0.01"
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"

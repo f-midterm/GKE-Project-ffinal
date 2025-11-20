@@ -400,8 +400,14 @@ function StockManagementPage() {
                     type='number'
                     value={formData.quantity}
                     onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value) || 0})}
+                    onKeyPress={(e) => {
+                      if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                        e.preventDefault();
+                      }
+                    }}
                     className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500'
                     min='0'
+                    step='1'
                   />
                 </div>
 
@@ -412,6 +418,11 @@ function StockManagementPage() {
                     step='0.01'
                     value={formData.unitPrice}
                     onChange={(e) => setFormData({...formData, unitPrice: parseFloat(e.target.value) || 0})}
+                    onKeyPress={(e) => {
+                      if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                        e.preventDefault();
+                      }
+                    }}
                     className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500'
                     min='0'
                   />
@@ -471,8 +482,14 @@ function StockManagementPage() {
                   type='number'
                   value={transactionData.quantity}
                   onChange={(e) => setTransactionData({...transactionData, quantity: parseInt(e.target.value) || 0})}
+                  onKeyPress={(e) => {
+                    if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                      e.preventDefault();
+                    }
+                  }}
                   className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500'
                   min='1'
+                  step='1'
                   max={transactionType === 'use' ? selectedItem.quantity : undefined}
                 />
               </div>
