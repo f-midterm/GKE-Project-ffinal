@@ -3,12 +3,11 @@ name: E2E Tests with Cypress
 on:
   workflow_dispatch:
     inputs:
-      backend_sha:
-        description: 'Backend image SHA (optional, uses latest if not provided)'
+      skip_build:
+        description: 'Skip building images (use existing images from GCR)'
         required: false
-      frontend_sha:
-        description: 'Frontend image SHA (optional, uses latest if not provided)'
-        required: false
+        type: boolean
+        default: false
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -16,9 +15,119 @@ env:
   FRONTEND_IMAGE: apartment-frontend
 
 jobs:
+  build-backend:
+    name: Build Backend for E2E
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_build }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+      
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+      
+      - name: Build Backend Image
+        working-directory: ./backend
+        run: |
+          echo "Building backend image with SHA: ${{ github.sha }}"
+          BUILD_ID=$(gcloud builds submit \
+            --config=cloudbuild.yaml \
+            --substitutions=_IMAGE_TAG=${{ github.sha }} \
+            --async \
+            --format="value(id)")
+          
+          echo "Build ID: $BUILD_ID"
+          
+          for i in {1..30}; do
+            STATUS=$(gcloud builds describe $BUILD_ID --format="value(status)" 2>/dev/null || echo "QUEUED")
+            echo "Build status: $STATUS"
+            
+            if [ "$STATUS" = "SUCCESS" ]; then
+              echo "✅ Backend image built successfully!"
+              exit 0
+            elif [ "$STATUS" = "FAILURE" ] || [ "$STATUS" = "TIMEOUT" ] || [ "$STATUS" = "CANCELLED" ]; then
+              echo "❌ Build failed with status: $STATUS"
+              gcloud builds log $BUILD_ID
+              exit 1
+            fi
+            
+            SLEEP_TIME=$((i * 10))
+            if [ $SLEEP_TIME -gt 60 ]; then SLEEP_TIME=60; fi
+            sleep $SLEEP_TIME
+          done
+  
+  build-frontend:
+    name: Build Frontend for E2E
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_build }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+      
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+      
+      - name: Build Frontend Image
+        working-directory: ./frontend
+        run: |
+          echo "Building frontend image with SHA: ${{ github.sha }}"
+          BUILD_ID=$(gcloud builds submit \
+            --config=cloudbuild.yaml \
+            --substitutions=_IMAGE_TAG=${{ github.sha }} \
+            --async \
+            --format="value(id)")
+          
+          echo "Build ID: $BUILD_ID"
+          
+          for i in {1..30}; do
+            STATUS=$(gcloud builds describe $BUILD_ID --format="value(status)" 2>/dev/null || echo "QUEUED")
+            echo "Build status: $STATUS"
+            
+            if [ "$STATUS" = "SUCCESS" ]; then
+              echo "✅ Frontend image built successfully!"
+              exit 0
+            elif [ "$STATUS" = "FAILURE" ] || [ "$STATUS" = "TIMEOUT" ] || [ "$STATUS" = "CANCELLED" ]; then
+              echo "❌ Build failed with status: $STATUS"
+              gcloud builds log $BUILD_ID
+              exit 1
+            fi
+            
+            SLEEP_TIME=$((i * 10))
+            if [ $SLEEP_TIME -gt 60 ]; then SLEEP_TIME=60; fi
+            sleep $SLEEP_TIME
+          done
+
   check-builds:
     runs-on: ubuntu-latest
     name: Check if builds are ready
+    needs: [build-backend, build-frontend]
+    if: always()
     outputs:
       backend_ready: ${{ steps.check.outputs.backend_ready }}
       frontend_ready: ${{ steps.check.outputs.frontend_ready }}
@@ -26,8 +135,17 @@ jobs:
       - name: Check build status
         id: check
         run: |
-          echo "backend_ready=true" >> $GITHUB_OUTPUT
-          echo "frontend_ready=true" >> $GITHUB_OUTPUT
+          if [ "${{ needs.build-backend.result }}" = "success" ] || [ "${{ needs.build-backend.result }}" = "skipped" ]; then
+            echo "backend_ready=true" >> $GITHUB_OUTPUT
+          else
+            echo "backend_ready=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ "${{ needs.build-frontend.result }}" = "success" ] || [ "${{ needs.build-frontend.result }}" = "skipped" ]; then
+            echo "frontend_ready=true" >> $GITHUB_OUTPUT
+          else
+            echo "frontend_ready=false" >> $GITHUB_OUTPUT
+          fi
   
   cypress-e2e:
     runs-on: ubuntu-latest
