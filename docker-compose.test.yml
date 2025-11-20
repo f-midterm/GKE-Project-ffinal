@@ -26,6 +26,7 @@ services:
   backend:
     image: gcr.io/${GCP_PROJECT_ID:-beliv-apartment}/apartment-backend:${IMAGE_TAG:-test}
     container_name: apartment-test-backend
+    restart: on-failure:5
     depends_on:
       mysql:
         condition: service_started
