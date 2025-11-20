@@ -28,7 +28,7 @@ services:
     container_name: apartment-test-backend
     depends_on:
       mysql:
-        condition: service_healthy
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/apartment_db}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-root}
@@ -62,7 +62,7 @@ services:
     container_name: apartment-test-frontend
     depends_on:
       backend:
-        condition: service_healthy
+        condition: service_started
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
     ports:
