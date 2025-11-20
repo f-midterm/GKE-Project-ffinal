@@ -59,24 +59,28 @@ jobs:
       - name: Pull Docker Images from GCR
         run: |
           echo "Pulling latest images from GCR..."
-          docker pull gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }} || \
+          # Try to pull with commit SHA first (from recent build)
+          if docker pull gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}; then
+            docker tag gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
+              gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:test
+          else
+            echo "⚠️ Image with SHA not found, using latest"
             docker pull gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:latest
+            docker tag gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:latest \
+              gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:test
+          fi
           
-          docker pull gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }} || \
+          if docker pull gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}; then
+            docker tag gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }} \
+              gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:test
+          else
+            echo "⚠️ Image with SHA not found, using latest"
             docker pull gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:latest
+            docker tag gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:latest \
+              gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:test
+          fi
           
           docker pull mysql:8.0
-          
-          # Tag for docker-compose
-          docker tag gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
-            gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:test || \
-            docker tag gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:latest \
-            gcr.io/${{ env.PROJECT_ID }}/${{ env.BACKEND_IMAGE }}:test
-          
-          docker tag gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }} \
-            gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:test || \
-            docker tag gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:latest \
-            gcr.io/${{ env.PROJECT_ID }}/${{ env.FRONTEND_IMAGE }}:test
           
           echo "✅ All images pulled successfully"
 
@@ -109,11 +113,21 @@ jobs:
           timeout 120s bash -c 'until docker compose -f docker-compose.test.yml exec -T mysql mysqladmin ping -h localhost --silent; do echo "Waiting for MySQL..."; sleep 5; done'
           echo "✅ MySQL is ready"
           
-          echo "Checking Backend logs..."
+          echo "Waiting a bit for backend to start..."
+          sleep 10
+          
+          echo "=== Backend Container Status ==="
+          docker compose -f docker-compose.test.yml ps backend
+          
+          echo "=== Backend Logs ==="
           docker compose -f docker-compose.test.yml logs backend
           
           echo "Waiting for Backend to be ready..."
-          timeout 120s bash -c 'until curl -f http://localhost:8080/health 2>/dev/null; do echo "Waiting for Backend..."; sleep 5; done'
+          timeout 120s bash -c 'until curl -f http://localhost:8080/health 2>/dev/null; do echo "Waiting for Backend..."; sleep 5; done' || {
+            echo "❌ Backend failed to start. Showing logs:"
+            docker compose -f docker-compose.test.yml logs backend
+            exit 1
+          }
           echo "✅ Backend is ready"
           
           echo "Waiting for Frontend to be ready..."
